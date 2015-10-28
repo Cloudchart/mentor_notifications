@@ -5,6 +5,8 @@ import logger from 'morgan'
 import cookieParser from 'cookie-parser'
 import bodyParser from 'body-parser'
 
+import './initializers/node_resque'
+
 import routes from './routes/index'
 
 let app = express()
