@@ -1,9 +1,7 @@
 import NR from 'node-resque'
+import Users from '../data/users'
 
-///////////////////////////
-// SET UP THE CONNECTION //
-///////////////////////////
-
+// connection details
 let connectionDetails = {
   package: 'ioredis',
   host: '127.0.0.1',
@@ -15,47 +13,52 @@ let connectionDetails = {
   // options: {password: 'abc'}
 };
 
-//////////////////////////////
-// DEFINE YOUR WORKER TASKS //
-//////////////////////////////
 
-// var jobs = {
-//   "add": {
-//     plugins: [ 'jobLock' ],
-//     pluginOptions: {
-//       jobLock: {},
-//     },
-//     perform: function(a,b,callback){
-//       var answer = a + b;
-//       callback(null, answer);
-//     },
-//   },
-//   "subtract": {
-//     perform: function(a,b,callback){
-//       var answer = a - b;
-//       callback(null, answer);
-//     },
-//   },
-// };
+// worker definitions
+let jobs = {
+  catcher: {
+    perform: (userId, done) => {
+      // find user
+      let user = Users.find((user) => { return user.id === userId })
 
-////////////////////
-// START A WORKER //
-////////////////////
+      // enqueue job based on user settings or
 
-// var worker = new NR.worker({connection: connectionDetails, queues: ['math', 'otherQueue']}, jobs);
-// worker.connect(function(){
-//   worker.workerCleanup(); // optional: cleanup any previous improperly shutdown workers on this host
-//   worker.start();
-// });
 
-///////////////////////
-// START A SCHEDULER //
-///////////////////////
+      // do nothing if job is present or
+      // reschedule job if user settings changed?
+      done(null, true)
+    }
+  },
+  spreader: {
+    perform: (userId, done) => {
+      // find user
+      // get insights without user reactions and send notification (email, push) and leave trace or
+      // reschedule job if user settings changed?
+      // done(null, result)
+    }
+  }
+}
 
-// var scheduler = new NR.scheduler({connection: connectionDetails});
-// scheduler.connect(function(){
-//   scheduler.start();
-// });
+
+// initializers
+let worker = new NR.worker({ connection: connectionDetails, queues: ['notifications'] }, jobs)
+worker.connect(() => {
+  worker.workerCleanup()
+  worker.start()
+})
+
+let queue = new NR.queue({ connection: connectionDetails }, jobs)
+
+
+// events
+queue.on('error', (error) => { console.warn(error) })
+
+
+// base app user enqueue simulation
+queue.connect(() => {
+  queue.enqueue('notifications', 'catcher', 1)
+})
+
 
 /////////////////////////
 // REGESTER FOR EVENTS //
