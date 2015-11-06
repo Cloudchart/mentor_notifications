@@ -4,7 +4,7 @@ export default [
     name: 'Andrey Peresleguine',
     email: 'peresleguine@gmail.com',
     notificationSettings: {
-      numberOfTimes: 2,
+      numberOfTimes: 3,
       startTime: '10:00',
       endTime: '22:00'
     }
