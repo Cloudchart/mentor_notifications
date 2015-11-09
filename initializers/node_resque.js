@@ -3,48 +3,36 @@
 import NR from 'node-resque'
 import moment from 'moment'
 
-import { Trace } from '../models'
-import Users from '../data/users'
+import connectionDetails from '../config/redis.json'
 
-import '../lib/math_extension'
+import { Trace } from '../models'
+import { Insight, UsersThemesInsight } from '../models/web_app'
+import Users from '../data/users'
 
 
 // Helpers
 //
-let
-  startOfToday = () => moment().utc().startOf('day').format(),
-  findUser = (userId) => Users.find((user) => { return user.id === userId }),
+let startOfToday, findUser, findLastTrace, findTodayTraces, scheduleSpreader;
 
-  findLastTrace = (userId) => {
-    return Trace.findOne({ order: [['createdAt', 'DESC']], where: { userId: userId } })
-  },
+startOfToday = () => moment().utc().startOf('day').format()
+findUser = (userId) => Users.find((user) => { return user.id === userId })
 
-  findTodayTraces = (userId) => {
-    return Trace.findAll({ where: { userId: userId, createdAt: { $gte: startOfToday() } } })
-  },
+findLastTrace = (userId) => {
+  return Trace.findOne({ order: [['createdAt', 'DESC']], where: { userId: userId } })
+}
 
-  scheduleSpreader = (queue, timeMoment, userId) => {
-    if (timeMoment && timeMoment.isValid()) {
-      queue.enqueueAt(timeMoment.unix() * 1000, 'notifications', "spreader", userId)
-      console.log('> enqueued spreader')
-    } else {
-      console.log('> did not enqueue spreader, invalid moment object')
-    }
-  };
+findTodayTraces = (userId) => {
+  return Trace.findAll({ where: { userId: userId, createdAt: { $gte: startOfToday() } } })
+}
 
-
-// Connection
-//
-let connectionDetails = {
-  package: 'ioredis',
-  host: '127.0.0.1',
-  password: null,
-  port: 6379,
-  database: 0,
-  namespace: 'resque'
-  // looping: true,
-  // options: {password: 'abc'}
-};
+scheduleSpreader = (queue, timeMoment, userId) => {
+  if (timeMoment && timeMoment.isValid()) {
+    queue.enqueueAt(timeMoment.unix() * 1000, 'notifications', "spreader", userId)
+    console.log('> enqueued spreader')
+  } else {
+    console.warn('> did not enqueue spreader, invalid moment object')
+  }
+}
 
 
 // Workers
@@ -55,14 +43,17 @@ let jobs = {
     perform: (userId, done) => {
       // find user
       let user = findUser(userId)
+      let desiredNumberOfTimes = user.notificationSettings.numberOfTimes
+
       // return done if user doesn't want to receive notifications
-      if (user.notificationSettings.numberOfTimes === 0) return done(null, true)
+      if (desiredNumberOfTimes === 0) return done(null, true)
 
       // schedule job unless it's present
       queue.scheduledAt('notifications', 'spreader', user.id, async (err, timestamps) => {
         if (timestamps.length > 0) {
-          // console.log(moment.unix(1446830228).format())
-          // queue.delDelayed('notifications', 'spreader', user.id)
+          queue.delDelayed('notifications', 'spreader', user.id, (err, deletedTimestamps) => {
+            console.log(err, deletedTimestamps)
+          })
           return done(null, true)
         } else {
           let now = moment()
@@ -73,7 +64,6 @@ let jobs = {
             scheduleSpreader(queue, startTime, user.id)
             return done(null, true)
           } else {
-            let desiredNumberOfTimes = user.notificationSettings.numberOfTimes
             let nearestTime
 
             if (desiredNumberOfTimes <= 2) {
@@ -94,7 +84,6 @@ let jobs = {
                   nearestStamp = startStamp + step * Math.ceil(nowDelta / step);
 
                 nearestTime = moment.unix(nearestStamp)
-                console.log(nearestTime.format())
               }
             }
 
@@ -112,8 +101,16 @@ let jobs = {
       // find user
       let user = findUser(userId)
 
-      // get insights without user reactions and send notification (email, push) and leave trace or
-      // reschedule job if user settings changed?
+      // get insights without user reactions
+      UsersThemesInsight.findAll({
+        attributes: ['insight_id'],
+        where: { user_id: 'c4e34cfd-05fc-4ad8-88ae-db73f2a3b1e5', rate: null }
+      }).then((ids) => {
+        console.log(ids)
+      })
+
+      // send notification (email, push)
+      // leave trace
       done(null, true)
     }
   }

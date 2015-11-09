@@ -1,14 +1,13 @@
-'use strict';
-module.exports = function(sequelize, DataTypes) {
-  var Trace = sequelize.define('Trace', {
+export default (sequelize, DataTypes) => {
+  let Trace = sequelize.define('Trace', {
     userId: DataTypes.UUID,
     status: DataTypes.INTEGER
   }, {
     classMethods: {
-      associate: function(models) {
+      associate: (models) => {
         // associations can be defined here
       }
     }
-  });
-  return Trace;
-};
+  })
+  return Trace
+}

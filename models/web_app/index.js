@@ -1,11 +1,10 @@
 import fs from 'fs'
 import path from 'path'
 import Sequelize from 'sequelize'
-import dbConfig from '../config/database.json'
+import dbConfig from '../../config/database.json'
 
 let basename = path.basename(module.filename)
-let env = process.env.NODE_ENV || 'development'
-let config = dbConfig[env]
+let config = dbConfig.webApp
 let sequelize = new Sequelize(config.database, config.username, config.password, config)
 let db = {}
 

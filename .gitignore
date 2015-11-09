@@ -1,4 +1,3 @@
-lib-cov
 *.seed
 *.log
 *.csv
@@ -12,6 +11,8 @@ lib-cov
 pids
 logs
 results
+lib-cov
+config/database.json
 
 node_modules
 npm-debug.log
