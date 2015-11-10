@@ -1,7 +1,7 @@
 export default (sequelize, DataTypes) => {
   let Trace = sequelize.define('Trace', {
     userId: DataTypes.UUID,
-    status: DataTypes.INTEGER
+    status: DataTypes.STRING
   }, {
     classMethods: {
       associate: (models) => {

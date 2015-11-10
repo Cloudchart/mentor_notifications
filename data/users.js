@@ -1,6 +1,6 @@
 export default [
   {
-    id: 1,
+    id: '9f76ad2d-7e86-4b2d-984c-2bd03636e240',
     name: 'Andrey Peresleguine',
     email: 'peresleguine@gmail.com',
     notificationSettings: {

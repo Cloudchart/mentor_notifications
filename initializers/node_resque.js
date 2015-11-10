@@ -2,35 +2,37 @@
 
 import NR from 'node-resque'
 import moment from 'moment'
+import postmark from 'postmark'
 
+import config from '../config/app.json'
 import connectionDetails from '../config/redis.json'
-
 import { Trace } from '../models'
-import { Insight, UsersThemesInsight } from '../models/web_app'
+import { Insight, UsersThemesInsight, User } from '../models/web_app'
 import Users from '../data/users'
+
+const postmarkClient = new postmark.Client(config.postmarkApiKey)
 
 
 // Helpers
 //
-let startOfToday, findUser, findLastTrace, findTodayTraces, scheduleSpreader;
+function startOfToday() {
+  return moment().utc().startOf('day').format()
+}
 
-startOfToday = () => moment().utc().startOf('day').format()
-findUser = (userId) => Users.find((user) => { return user.id === userId })
-
-findLastTrace = (userId) => {
+function findLastTrace(userId) {
   return Trace.findOne({ order: [['createdAt', 'DESC']], where: { userId: userId } })
 }
 
-findTodayTraces = (userId) => {
+function findTodayTraces(userId) {
   return Trace.findAll({ where: { userId: userId, createdAt: { $gte: startOfToday() } } })
 }
 
-scheduleSpreader = (queue, timeMoment, userId) => {
+function scheduleSpreader(queue, timeMoment, userId) {
   if (timeMoment && timeMoment.isValid()) {
     queue.enqueueAt(timeMoment.unix() * 1000, 'notifications', "spreader", userId)
     console.log('> enqueued spreader')
   } else {
-    console.warn('> did not enqueue spreader, invalid moment object')
+    console.error('! did not enqueue spreader, invalid moment object')
   }
 }
 
@@ -42,11 +44,11 @@ let jobs = {
   catcher: {
     perform: (userId, done) => {
       // find user
-      let user = findUser(userId)
+      let user = Users.find((user) => { return user.id === userId })
       let desiredNumberOfTimes = user.notificationSettings.numberOfTimes
 
       // return done if user doesn't want to receive notifications
-      if (desiredNumberOfTimes === 0) return done(null, true)
+      if (desiredNumberOfTimes === 0) { return done(null, true) }
 
       // schedule job unless it's present
       queue.scheduledAt('notifications', 'spreader', user.id, async (err, timestamps) => {
@@ -96,22 +98,48 @@ let jobs = {
   },
   // sends notification to a user
   spreader: {
-    perform: (userId, done) => {
+    perform: async (userId, done) => {
       console.log('spreader here', moment().format())
       // find user
-      let user = findUser(userId)
+      let
+        user = await User.findById(userId),
+        lastTrace = await findLastTrace(userId),
+        range = { $lte: moment().utc().format() };
+
+      if (lastTrace) { range['$gte'] = lastTrace.createdAt }
 
       // get insights without user reactions
-      UsersThemesInsight.findAll({
+      let usersThemesInsights = await UsersThemesInsight.findAll({
         attributes: ['insight_id'],
-        where: { user_id: 'c4e34cfd-05fc-4ad8-88ae-db73f2a3b1e5', rate: null }
-      }).then((ids) => {
-        console.log(ids)
+        where: { user_id: user.id, rate: null, created_at: range }
       })
 
+      let insightIds = usersThemesInsights.map((uti) => { return uti.insight_id })
+
+      if (insightIds.length == 0) {
+        console.log('no insights were found')
+        return done(null, true)
+      }
+
       // send notification (email, push)
-      // leave trace
-      done(null, true)
+      if (user.email) {
+        postmarkClient.sendEmail({
+          from: config.defaultFrom,
+          to: user.email,
+          subject: 'Notification',
+          TextBody: insightIds.join(', ')
+        }, async (error, success) => {
+          if(error) {
+            console.error('Unable to send via postmark: ' + error.message)
+            return
+          }
+
+          // leave trace
+          let trace = await Trace.create({ userId: user.id, status: 'delivered' })
+          console.log(trace.status)
+          done(null, true)
+        })
+      }
     }
   }
 }
@@ -141,4 +169,4 @@ queue.on('error', (error) => { console.log(error) })
 
 // Notifications queue simulation from WebApp
 //
-queue.enqueue('notifications', 'catcher', 1)
+queue.enqueue('notifications', 'catcher', '9f76ad2d-7e86-4b2d-984c-2bd03636e240')
