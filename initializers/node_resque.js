@@ -1,8 +1,10 @@
 #!/usr/bin/env babel-node --optional es7.asyncFunctions
 
+import path from 'path'
 import NR from 'node-resque'
 import moment from 'moment'
 import postmark from 'postmark'
+import apn from 'apn'
 
 import config from '../config/app.json'
 import connectionDetails from '../config/redis.json'
@@ -12,6 +14,21 @@ import Users from '../data/users'
 
 const postmarkClient = new postmark.Client(config.postmarkApiKey)
 
+const apnConnection = new apn.Connection({
+  cert: path.resolve('./certificates', 'cert.pem'),
+  key: path.resolve('./certificates', 'key.pem'),
+  production: true
+})
+
+let myDevice = new apn.Device('4C37DA3F4C27318B8347AB2426AACD1AB2328F31877F5F4DF73C36305D39126D')
+let note = new apn.Notification()
+note.alert = {
+  title: 'Hello World',
+  body: 'We made it!'
+}
+note.urlArgs = ['']
+// apnConnection.pushNotification(note, myDevice)
+// console.log('i think i sent push')
 
 // Helpers
 //
@@ -169,4 +186,4 @@ queue.on('error', (error) => { console.log(error) })
 
 // Notifications queue simulation from WebApp
 //
-queue.enqueue('notifications', 'catcher', '9f76ad2d-7e86-4b2d-984c-2bd03636e240')
+// queue.enqueue('notifications', 'catcher', '9f76ad2d-7e86-4b2d-984c-2bd03636e240')

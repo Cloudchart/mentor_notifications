@@ -7,6 +7,7 @@
     "start": "nodemon --exec DEBUG=mentor_notifications:* npm run babel-node -- ./bin/www"
   },
   "dependencies": {
+    "apn": "^1.7.5",
     "babel": "^5.8.29",
     "babel-core": "^5.8.29",
     "body-parser": "~1.13.2",
