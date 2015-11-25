@@ -1,6 +1,6 @@
 export default [
   {
-    id: '9f76ad2d-7e86-4b2d-984c-2bd03636e240',
+    id: '0c7a7080-3e38-44fb-8736-2de7d95283e8',
     name: 'Andrey Peresleguine',
     email: 'peresleguine@gmail.com',
     notificationSettings: {
