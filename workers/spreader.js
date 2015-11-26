@@ -8,6 +8,7 @@ import apn from 'apn'
 import config from '../config/app.json'
 import { Trace } from '../models'
 import { Insight, UsersThemesInsight, User } from '../models/web_app'
+import Users from '../data/users'
 
 const postmarkClient = new postmark.Client(config.postmarkApiKey)
 
@@ -15,6 +16,22 @@ const safariApnConnection = new apn.Connection({
   cert: path.resolve('./certificates', 'safari', 'cert.pem'),
   key: path.resolve('./certificates', 'safari', 'key.pem'),
   production: true
+})
+
+const iosApnConnection = new apn.Connection({
+  cert: path.resolve('./certificates', 'ios', 'cert.pem'),
+  key: path.resolve('./certificates', 'ios', 'key.pem'),
+  production: true
+})
+
+// TODO: configure apn feedback service
+
+// Error handlers
+//
+iosApnConnection.on('transmissionError', (errorCode, notification, device) => {
+  console.error('transmissionError, code:', errorCode)
+  console.log('device', device)
+  console.log('notification', notification)
 })
 
 
@@ -34,22 +51,34 @@ function sendEmail(user, insightIds) {
     TextBody: insightIds.join(', ')
   }, async (error, success) => {
     if(error) {
-      console.error('Unable to send via postmark: ' + error.message)
-      return
+      console.error('unable to send via postmark:', error.message)
+    } else {
+      console.log('email sent')
     }
   })
 }
 
-function sendPush() {
-  let myDevice = new apn.Device('4C37DA3F4C27318B8347AB2426AACD1AB2328F31877F5F4DF73C36305D39126D')
-  let note = new apn.Notification()
-  note.alert = {
-    title: 'Hello World',
-    body: 'We made it!'
+function sendPush(userId) {
+  let user = Users.find((user) => { return user.id === userId })
+
+  // safari test
+  let safariDevice = new apn.Device(user.pushTokens.safari)
+  let safariNote = new apn.Notification()
+  safariNote.alert = {
+    title: 'Mentor',
+    body: 'Testing...'
   }
-  note.urlArgs = ['']
-  safariApnConnection.pushNotification(note, myDevice)
-  console.log('i think i sent push')
+  safariNote.urlArgs = ['']
+  safariApnConnection.pushNotification(safariNote, safariDevice)
+  console.log('safari push sent')
+
+  // ios test
+  let iosDevice = new apn.Device(user.pushTokens.ios)
+  let iosNote = new apn.Notification()
+  iosNote.alert = 'Testing...'
+  iosNote.sound = 'default'
+  iosApnConnection.pushNotification(iosNote, iosDevice)
+  console.log('ios push sent')
 }
 
 
@@ -57,13 +86,17 @@ function sendPush() {
 //
 export default {
   perform: async (userId, done) => {
-    console.log('spreader here', moment().format())
     // find user
-    let
-      user = await User.findById(userId),
-      lastTrace = await findLastTrace(userId),
-      range = { $lte: moment().utc().format() };
+    let user = await User.findById(userId)
 
+    if (!user) {
+      console.error('user', userId, 'was not found')
+      return done(null, true)
+    }
+
+    // find last trace and define range
+    let lastTrace = await findLastTrace(userId)
+    let range = { $lte: moment().utc().format() }
     if (lastTrace) { range['$gte'] = lastTrace.createdAt }
 
     // get insights without user reactions
@@ -80,13 +113,12 @@ export default {
     }
 
     // send notification (email, push)
-    // TODO: error handling
     sendEmail(user, insightIds)
-    sendPush()
+    sendPush(userId)
 
     // leave trace
     let trace = await Trace.create({ userId: user.id, status: 'delivered' })
-    console.log(trace.status)
+    console.log('trace created with status:', trace.status)
     done(null, true)
   }
 }
