@@ -1,16 +1,18 @@
 #!/usr/bin/env babel-node --optional es7.asyncFunctions
 
+import dotenv from 'dotenv'
 import path from 'path'
 import moment from 'moment'
 import postmark from 'postmark'
 import apn from 'apn'
 
-import config from '../config/app.json'
 import { Trace } from '../models'
 import { Insight, UsersThemesInsight, User } from '../models/web_app'
 import Users from '../data/users'
 
-const postmarkClient = new postmark.Client(config.postmarkApiKey)
+dotenv.load()
+
+const postmarkClient = new postmark.Client(process.env.POSTMARK_API_KEY)
 
 const safariApnConnection = new apn.Connection({
   cert: path.resolve('./certificates', 'safari', 'cert.pem'),
@@ -45,7 +47,7 @@ function sendEmail(user, insightIds) {
   if (!user.email) return
 
   postmarkClient.sendEmail({
-    from: config.defaultFrom,
+    from: 'staff@insights.vc',
     to: user.email,
     subject: 'Notification',
     TextBody: insightIds.join(', ')
