@@ -13,7 +13,6 @@ pids
 logs
 results
 lib-cov
-config/database.json
 
 node_modules
 npm-debug.log

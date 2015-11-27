@@ -1,0 +1,22 @@
+{
+  "development": {
+    "dialect": "sqlite",
+    "storage": "./development.sqlite"
+  },
+  "production": {
+    "use_env_variable": "CLEARDB_DATABASE_URL",
+    "pool": {
+      "max":  20,
+      "min":  0,
+      "idle": 500
+    }
+  },
+  "webApp": {
+    "use_env_variable": "WEBAPP_CLEARDB_DATABASE_URL",
+    "pool": {
+      "max":  20,
+      "min":  0,
+      "idle": 500
+    }
+  }
+}

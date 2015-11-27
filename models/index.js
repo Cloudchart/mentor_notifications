@@ -1,3 +1,5 @@
+require('dotenv').load()
+
 import fs from 'fs'
 import path from 'path'
 import Sequelize from 'sequelize'
@@ -6,8 +8,14 @@ import dbConfig from '../config/database.json'
 let basename = path.basename(module.filename)
 let env = process.env.NODE_ENV || 'development'
 let config = dbConfig[env]
-let sequelize = new Sequelize(config.database, config.username, config.password, config)
+let sequelize
 let db = {}
+
+if (config.use_env_variable) {
+  sequelize = new Sequelize(process.env[config.use_env_variable])
+} else {
+  sequelize = new Sequelize(config.database, config.username, config.password, config)
+}
 
 fs
   .readdirSync(__dirname)

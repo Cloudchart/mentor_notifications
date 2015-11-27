@@ -1,6 +1,6 @@
 #!/usr/bin/env babel-node --optional es7.asyncFunctions
+require('dotenv').load()
 
-import dotenv from 'dotenv'
 import path from 'path'
 import moment from 'moment'
 import postmark from 'postmark'
@@ -10,25 +10,31 @@ import { Trace } from '../models'
 import { Insight, UsersThemesInsight, User } from '../models/web_app'
 import Users from '../data/users'
 
-dotenv.load()
-
+const env = process.env.NODE_ENV || 'development'
 const postmarkClient = new postmark.Client(process.env.POSTMARK_API_KEY)
 
-const safariApnConnection = new apn.Connection({
-  cert: path.resolve('./certificates', 'safari', 'cert.pem'),
-  key: path.resolve('./certificates', 'safari', 'key.pem'),
-  production: true
-})
+// APN connections
+//
+let safariCert, safariKey, iosCert, iosKey;
 
-const iosApnConnection = new apn.Connection({
-  cert: path.resolve('./certificates', 'ios', 'cert.pem'),
-  key: path.resolve('./certificates', 'ios', 'key.pem'),
-  production: true
-})
+if (env === 'production') {
+  safariCert = process.env.SAFARI_CERT
+  safariKey = process.env.SAFARI_KEY
+  iosCert = process.env.IOS_CERT
+  iosKey = process.env.IOS_KEY
+} else {
+  safariCert = path.resolve('./certificates', 'safari', 'cert.pem')
+  safariKey = path.resolve('./certificates', 'safari', 'key.pem')
+  iosCert = path.resolve('./certificates', 'ios', 'cert.pem')
+  iosKey = path.resolve('./certificates', 'ios', 'key.pem')
+}
 
-// TODO: configure apn feedback service
+const safariApnConnection = new apn.Connection({ cert: safariCert, key: safariKey, production: true })
+const iosApnConnection = new apn.Connection({ cert: iosCert, key: iosKey, production: true })
 
-// Error handlers
+// TODO: configure APN feedback service
+
+// APN error handlers
 //
 iosApnConnection.on('transmissionError', (errorCode, notification, device) => {
   console.error('transmissionError, code:', errorCode)
@@ -99,7 +105,7 @@ export default {
     // find last trace and define range
     let lastTrace = await findLastTrace(userId)
     let range = { $lte: moment().utc().format() }
-    if (lastTrace) { range['$gte'] = lastTrace.createdAt }
+    // if (lastTrace) { range['$gte'] = lastTrace.createdAt }
 
     // get insights without user reactions
     let usersThemesInsights = await UsersThemesInsight.findAll({

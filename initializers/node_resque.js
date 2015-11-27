@@ -3,7 +3,6 @@ import NR from 'node-resque'
 import connectionDetails from '../config/redis.json'
 import workers from '../workers'
 
-
 // Initializers
 //
 let worker = new NR.worker({ connection: connectionDetails, queues: 'notifications' }, workers)

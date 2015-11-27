@@ -1,3 +1,5 @@
+require('dotenv').load()
+
 import fs from 'fs'
 import path from 'path'
 import Sequelize from 'sequelize'
@@ -5,7 +7,7 @@ import dbConfig from '../../config/database.json'
 
 let basename = path.basename(module.filename)
 let config = dbConfig.webApp
-let sequelize = new Sequelize(config.database, config.username, config.password, config)
+let sequelize = new Sequelize(process.env[config.use_env_variable])
 let db = {}
 
 fs
