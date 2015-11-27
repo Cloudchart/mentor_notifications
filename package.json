@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "babel-node": "babel-node --stage 0",
-    "start": "nodemon --exec DEBUG=mentor_notifications:* npm run babel-node -- ./bin/www"
+    "dev-start": "nodemon --exec DEBUG=mentor_notifications:* node ./bin/www",
+    "start": "node ./bin/www"
   },
   "dependencies": {
     "apn": "^1.7.5",

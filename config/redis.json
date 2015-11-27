@@ -1,8 +1,13 @@
 {
-  "package": "ioredis",
-  "host": "127.0.0.1",
-  "password": null,
-  "port": 6379,
-  "database": 0,
-  "namespace": "resque"
+  "development": {
+    "package": "ioredis",
+    "host": "127.0.0.1",
+    "password": null,
+    "port": 6379,
+    "database": 0,
+    "namespace": "resque"
+  },
+  "production": {
+    "use_env_variable": "REDIS_URL"
+  }
 }
