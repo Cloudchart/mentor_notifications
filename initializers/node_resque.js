@@ -1,5 +1,6 @@
 import NR from 'node-resque'
 import Redis from 'ioredis'
+import schedule from 'node-schedule'
 
 import workers from '../workers'
 
@@ -30,7 +31,10 @@ queue.on('error', (error) => { console.log('Queue error:', error) })
 // Notifications queue simulation from WebApp
 //
 queue.connect(() => {
-  queue.enqueue('notifications', 'catcher', '0c7a7080-3e38-44fb-8736-2de7d95283e8')
+  schedule.scheduleJob('*/10 * * * *', () => {
+    console.log('>>> enqueued scheduler')
+    if (scheduler.master) { queue.enqueue('notifications', 'listener') }
+  })
 })
 
 

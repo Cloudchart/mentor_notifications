@@ -4,11 +4,11 @@ import postmark from 'postmark'
 import apn from 'apn'
 
 import { Trace } from '../models'
-import { Insight, UsersThemesInsight, User } from '../models/web_app'
-import Users from '../data/users'
+import { Device, UsersThemesInsight, User } from '../models/web_app'
 
 const env = process.env.NODE_ENV || 'development'
 const postmarkClient = new postmark.Client(process.env.POSTMARK_API_KEY)
+
 
 // APN connections
 //
@@ -30,6 +30,7 @@ const safariApnConnection = new apn.Connection({ cert: safariCert, key: safariKe
 const iosApnConnection = new apn.Connection({ cert: iosCert, key: iosKey, production: true })
 
 // TODO: configure APN feedback service
+
 
 // APN error handlers
 //
@@ -54,7 +55,7 @@ function sendEmail(user, insightIds) {
     to: user.email,
     subject: 'Notification',
     TextBody: insightIds.join(', ')
-  }, async (error, success) => {
+  }, (error, success) => {
     if(error) {
       console.error('unable to send via postmark:', error.message)
     } else {
@@ -63,27 +64,39 @@ function sendEmail(user, insightIds) {
   })
 }
 
-function sendPush(userId) {
-  let user = Users.find((user) => { return user.id === userId })
+async function sendPush(user) {
+  // get tokens
+  let safariPushToken = null
+
+  let device = await Device.findOne({
+    attributes: ['push_token'],
+    where: { user_id: user.id }
+  })
+
+  let iosPushToken = device.push_token
 
   // safari test
-  let safariDevice = new apn.Device(user.pushTokens.safari)
-  let safariNote = new apn.Notification()
-  safariNote.alert = {
-    title: 'Mentor',
-    body: 'Testing...'
+  if (safariPushToken) {
+    let safariDevice = new apn.Device(safariPushToken)
+    let safariNote = new apn.Notification()
+    safariNote.alert = {
+      title: 'Mentor',
+      body: 'You have new insights to explore'
+    }
+    safariNote.urlArgs = ['']
+    safariApnConnection.pushNotification(safariNote, safariDevice)
+    console.log('safari push sent')
   }
-  safariNote.urlArgs = ['']
-  safariApnConnection.pushNotification(safariNote, safariDevice)
-  console.log('safari push sent')
 
   // ios test
-  let iosDevice = new apn.Device(user.pushTokens.ios)
-  let iosNote = new apn.Notification()
-  iosNote.alert = 'Testing...'
-  iosNote.sound = 'default'
-  iosApnConnection.pushNotification(iosNote, iosDevice)
-  console.log('ios push sent')
+  if (iosPushToken) {
+    let iosDevice = new apn.Device(iosPushToken)
+    let iosNote = new apn.Notification()
+    iosNote.alert = 'You have new insights to explore'
+    iosNote.sound = 'default'
+    iosApnConnection.pushNotification(iosNote, iosDevice)
+    console.log('ios push sent')
+  }
 }
 
 
@@ -119,7 +132,7 @@ export default {
 
     // send notification (email, push)
     sendEmail(user, insightIds)
-    sendPush(userId)
+    sendPush(user)
 
     // leave trace
     let trace = await Trace.create({ userId: user.id, status: 'delivered' })
