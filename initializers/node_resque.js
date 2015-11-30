@@ -1,15 +1,9 @@
 import NR from 'node-resque'
 import Redis from 'ioredis'
 
-import config from '../config/redis.json'
 import workers from '../workers'
 
-let env = process.env.NODE_ENV || 'development'
-let connectionDetails = config[env]
-
-if (connectionDetails.use_env_variable) {
-  connectionDetails = { redis: new Redis(process.env[connectionDetails.use_env_variable]) }
-}
+let connectionDetails = { redis: new Redis(process.env.REDIS_URL) }
 
 
 // Initializers
