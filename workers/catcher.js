@@ -1,5 +1,3 @@
-#!/usr/bin/env babel-node --optional es7.asyncFunctions
-
 import moment from 'moment'
 
 import { Trace } from '../models'

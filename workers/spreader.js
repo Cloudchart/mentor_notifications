@@ -1,6 +1,3 @@
-#!/usr/bin/env babel-node --optional es7.asyncFunctions
-require('dotenv').load()
-
 import path from 'path'
 import moment from 'moment'
 import postmark from 'postmark'
@@ -105,7 +102,7 @@ export default {
     // find last trace and define range
     let lastTrace = await findLastTrace(userId)
     let range = { $lte: moment().utc().format() }
-    // if (lastTrace) { range['$gte'] = lastTrace.createdAt }
+    if (lastTrace) { range['$gte'] = lastTrace.createdAt }
 
     // get insights without user reactions
     let usersThemesInsights = await UsersThemesInsight.findAll({
