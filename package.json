@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "start-dev": "nf start -w",
     "start": "nf start"
   },
   "dependencies": {

@@ -7,14 +7,13 @@ import queue from '../initializers/node_resque'
 //
 export default {
   perform: async (done) => {
-    // get users to be notified
+    // get user ids to be notified
     let usersThemesInsights = await UsersThemesInsight.findAll({
       attributes: ['user_id'],
       where: { rate: null, created_at: { $gte: lastTimestamp.get() } }
     })
     let userIds = new Set()
     usersThemesInsights.forEach((uti) => { userIds.add(uti.user_id) })
-    console.log(userIds)
 
     // enqueue catcher
     userIds.forEach((id) => {

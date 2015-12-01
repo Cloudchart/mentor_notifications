@@ -1,44 +1,8 @@
-import path from 'path'
-import moment from 'moment'
-import postmark from 'postmark'
 import apn from 'apn'
 
 import { Trace } from '../models'
-import { Device, UsersThemesInsight, User } from '../models/web_app'
-
-const env = process.env.NODE_ENV || 'development'
-const postmarkClient = new postmark.Client(process.env.POSTMARK_API_KEY)
-
-
-// APN connections
-//
-let safariCert, safariKey, iosCert, iosKey;
-
-if (env === 'production') {
-  safariCert = process.env.SAFARI_CERT
-  safariKey = process.env.SAFARI_KEY
-  iosCert = process.env.IOS_CERT
-  iosKey = process.env.IOS_KEY
-} else {
-  safariCert = path.resolve('./certificates', 'safari', 'cert.pem')
-  safariKey = path.resolve('./certificates', 'safari', 'key.pem')
-  iosCert = path.resolve('./certificates', 'ios', 'cert.pem')
-  iosKey = path.resolve('./certificates', 'ios', 'key.pem')
-}
-
-const safariApnConnection = new apn.Connection({ cert: safariCert, key: safariKey, production: true })
-const iosApnConnection = new apn.Connection({ cert: iosCert, key: iosKey, production: true })
-
-// TODO: configure APN feedback service
-
-
-// APN error handlers
-//
-iosApnConnection.on('transmissionError', (errorCode, notification, device) => {
-  console.error('transmissionError, code:', errorCode)
-  console.log('device', device)
-  console.log('notification', notification)
-})
+import { Device, UsersThemesInsight, User, DevicePushToken } from '../models/web_app'
+import { safariApnConnection, iosApnConnection, postmarkClient } from '../clients'
 
 
 // Helpers
@@ -66,18 +30,21 @@ function sendEmail(user, insightIds) {
 
 async function sendPush(user) {
   // get tokens
-  let safariPushToken = null
+  let devicePushTokens = await DevicePushToken.findAll({
+    attributes: ['value'],
+    where: { user_id: user.id, type: 'safari' }
+  })
+  let safariPushTokens = devicePushTokens.map((dpt) => dpt.value)
 
   let device = await Device.findOne({
     attributes: ['push_token'],
     where: { user_id: user.id }
   })
-
   let iosPushToken = device.push_token
 
-  // safari test
-  if (safariPushToken) {
-    let safariDevice = new apn.Device(safariPushToken)
+  // safari push
+  safariPushTokens.forEach((token) => {
+    let safariDevice = new apn.Device(token)
     let safariNote = new apn.Notification()
     safariNote.alert = {
       title: 'Mentor',
@@ -86,9 +53,9 @@ async function sendPush(user) {
     safariNote.urlArgs = ['']
     safariApnConnection.pushNotification(safariNote, safariDevice)
     console.log('safari push sent')
-  }
+  })
 
-  // ios test
+  // ios push
   if (iosPushToken) {
     let iosDevice = new apn.Device(iosPushToken)
     let iosNote = new apn.Notification()
@@ -114,7 +81,7 @@ export default {
 
     // find last trace and define range
     let lastTrace = await findLastTrace(userId)
-    let range = { $lte: moment().utc().format() }
+    let range = { $lte: Date.now() }
     if (lastTrace) { range['$gte'] = lastTrace.createdAt }
 
     // get insights without user reactions
