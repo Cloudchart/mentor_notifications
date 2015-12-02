@@ -1,7 +1,8 @@
 import NR from 'node-resque'
-import Redis from 'ioredis'
 import schedule from 'node-schedule'
 import workers from '../workers'
+
+import { redisClient } from '../clients'
 
 
 // Helpers
@@ -19,20 +20,18 @@ function stop() {
 
 // Initializers
 //
-const connectionDetails = { redis: new Redis(process.env.REDIS_URL) }
-
-const worker = new NR.worker({ connection: connectionDetails, queues: 'notifications' }, workers)
+const worker = new NR.worker({ connection: { redis: redisClient }, queues: 'notifications' }, workers)
 worker.connect(() => {
   worker.workerCleanup()
   worker.start()
 })
 
-const scheduler = new NR.scheduler({ connection: connectionDetails })
+const scheduler = new NR.scheduler({ connection: { redis: redisClient } })
 scheduler.connect(() => {
   scheduler.start()
 })
 
-const queue = new NR.queue({ connection: connectionDetails }, workers)
+const queue = new NR.queue({ connection: { redis: redisClient } }, workers)
 
 
 // Events
