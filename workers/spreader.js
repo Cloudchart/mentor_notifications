@@ -1,8 +1,9 @@
 import apn from 'apn'
 
 import { Trace } from '../models'
-import { Device, UsersThemesInsight, User, DevicePushToken } from '../models/web_app'
+import { Insight, Device, UsersThemesInsight, User, DevicePushToken } from '../models/web_app'
 import { safariApnConnection, iosApnConnection, postmarkClient } from '../clients'
+import { truncate } from '../utils'
 
 
 // Helpers
@@ -58,13 +59,19 @@ async function sendPush(user, insightIds) {
 
   // ios push
   if (iosPushToken) {
+    // get insight content
+    let randomInsight = await Insight.findById(insightIds[0])
+    let insightContent = truncate(randomInsight.content, 100)
+
+    // gather payload
     let iosDevice = new apn.Device(iosPushToken)
     let iosNote = new apn.Notification()
-    iosNote.alert = 'You have new insights to explore'
+    iosNote.alert = 'New advice for you: ' + insightContent
     iosNote.sound = 'default'
     iosNote.badge = insightIds.length
     iosNote.payload = { screen: 'AdviceForYou' }
 
+    // send notification
     iosApnConnection.pushNotification(iosNote, iosDevice)
     console.log('ios push sent')
   }
