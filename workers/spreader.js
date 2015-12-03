@@ -28,7 +28,7 @@ function sendEmail(user, insightIds) {
   })
 }
 
-async function sendPush(user) {
+async function sendPush(user, insightIds) {
   // get tokens
   let devicePushTokens = await DevicePushToken.findAll({
     attributes: ['value'],
@@ -51,6 +51,7 @@ async function sendPush(user) {
       body: 'You have new insights to explore'
     }
     safariNote.urlArgs = ['']
+
     safariApnConnection.pushNotification(safariNote, safariDevice)
     console.log('safari push sent')
   })
@@ -61,6 +62,9 @@ async function sendPush(user) {
     let iosNote = new apn.Notification()
     iosNote.alert = 'You have new insights to explore'
     iosNote.sound = 'default'
+    iosNote.badge = insightIds.length
+    iosNote.payload = { screen: 'AdviceForYou' }
+
     iosApnConnection.pushNotification(iosNote, iosDevice)
     console.log('ios push sent')
   }
@@ -99,7 +103,7 @@ export default {
 
     // send notification (email, push)
     sendEmail(user, insightIds)
-    sendPush(user)
+    sendPush(user, insightIds)
 
     // leave trace
     let trace = await Trace.create({ userId: user.id, status: 'delivered' })
