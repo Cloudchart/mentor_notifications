@@ -4,7 +4,6 @@ import workers from '../workers'
 
 import { redisClient } from '../clients'
 
-
 // Helpers
 //
 function stop() {
