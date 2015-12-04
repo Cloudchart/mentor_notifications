@@ -2,8 +2,8 @@ import { Trace } from '../models'
 import queue from '../initializers/node_resque'
 
 const defaultStartHourUTC = 7
-const defaultEndHourUTC = 19
-const defaultNumberOfTimes = 4
+const defaultEndHourUTC = 17
+const defaultNumberOfTimes = 6
 const oneDayInMilliseconds = 86400000
 
 
