@@ -1,8 +1,8 @@
 import { Trace } from '../models'
 import queue from '../initializers/node_resque'
 
-const defaultStartHour = 10
-const defaultEndHour = 22
+const defaultStartHourUTC = 7
+const defaultEndHourUTC = 19
 const defaultNumberOfTimes = 4
 const oneDayInMilliseconds = 86400000
 
@@ -38,8 +38,8 @@ export default {
       } else {
         let now = new Date
         let nowTime = + now
-        let startTime = + new Date(now.getFullYear(), now.getMonth(), now.getDate(), defaultStartHour)
-        let endTime = + new Date(now.getFullYear(), now.getMonth(), now.getDate(), defaultEndHour)
+        let startTime = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), defaultStartHourUTC)
+        let endTime = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), defaultEndHourUTC)
 
         // *|-------|
         if (nowTime < startTime) {
