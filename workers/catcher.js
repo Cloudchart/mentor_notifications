@@ -1,17 +1,18 @@
+import moment from 'moment'
+
 import { Trace } from '../models'
 import queue from '../initializers/node_resque'
 
 const defaultStartHourUTC = 7
 const defaultEndHourUTC = 17
 const defaultNumberOfTimes = 6
-const oneDayInMilliseconds = 86400000
+const oneDayInSeconds = 86400
 
 
 // Helpers
 //
 function startOfToday() {
-  let now = new Date()
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  return moment.utc().startOf('day').format()
 }
 
 function findTodayTraces(userId) {
@@ -19,7 +20,7 @@ function findTodayTraces(userId) {
 }
 
 function scheduleSpreader(queue, timestamp, userId) {
-  queue.enqueueAt(timestamp, 'notifications', 'spreader', userId)
+  queue.enqueueAt(timestamp * 1000, 'notifications', 'spreader', userId)
   console.log('>>> enqueued spreader')
 }
 
@@ -36,10 +37,9 @@ export default {
       if (timestamps.length > 0) {
         return done(null, true)
       } else {
-        let now = new Date
-        let nowTime = + now
-        let startTime = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), defaultStartHourUTC)
-        let endTime = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), defaultEndHourUTC)
+        let nowTime = moment().unix()
+        let startTime = moment.utc(defaultStartHourUTC, 'HH').unix()
+        let endTime = moment.utc(defaultEndHourUTC, 'HH').unix()
 
         // *|-------|
         if (nowTime < startTime) {
@@ -47,7 +47,7 @@ export default {
           return done(null, true)
         // |-------|*
         } else if (nowTime > endTime) {
-          scheduleSpreader(queue, startTime + oneDayInMilliseconds, userId)
+          scheduleSpreader(queue, startTime + oneDayInSeconds, userId)
           return done(null, true)
         // |---*---|
         } else {
@@ -60,7 +60,7 @@ export default {
             let deliveredNumberOfTimes = traces.length
 
             if (deliveredNumberOfTimes >= defaultNumberOfTimes) {
-              nearestTime = startTime + oneDayInMilliseconds
+              nearestTime = startTime + oneDayInSeconds
             } else {
               let nowDelta = nowTime - startTime
               let step = (endTime - startTime) / (defaultNumberOfTimes - 1)

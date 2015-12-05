@@ -12,6 +12,7 @@
     "babel-core": "^5.8.29",
     "debug": "~2.2.0",
     "foreman": "1.4.1",
+    "moment": "^2.10.6",
     "mysql": "^2.9.0",
     "node-resque": "^1.1.1",
     "node-schedule": "^0.6.0",

@@ -21,7 +21,7 @@ export default {
     })
 
     // update last timestamp
-    lastTimestamp.set(new Date)
+    lastTimestamp.set()
     done(null, true)
   }
 }
