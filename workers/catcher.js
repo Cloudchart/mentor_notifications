@@ -11,7 +11,7 @@ const oneDayInMilliseconds = 86400000
 //
 function startOfToday() {
   let now = new Date()
-  return + new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate())
 }
 
 function findTodayTraces(userId) {

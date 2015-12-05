@@ -29,35 +29,14 @@ function sendEmail(user, insightIds) {
   })
 }
 
-async function sendPush(user, insightIds) {
-  // get tokens
-  let devicePushTokens = await DevicePushToken.findAll({
-    attributes: ['value'],
-    where: { user_id: user.id, type: 'safari' }
-  })
-  let safariPushTokens = devicePushTokens.map((dpt) => dpt.value)
-
+async function sendIosPush(user, insightIds) {
+  // get token
   let device = await Device.findOne({
     attributes: ['push_token'],
     where: { user_id: user.id }
   })
   let iosPushToken = device.push_token
 
-  // safari push
-  safariPushTokens.forEach((token) => {
-    let safariDevice = new apn.Device(token)
-    let safariNote = new apn.Notification()
-    safariNote.alert = {
-      title: 'Mentor',
-      body: 'You have new insights to explore'
-    }
-    safariNote.urlArgs = ['']
-
-    safariApnConnection.pushNotification(safariNote, safariDevice)
-    console.log('safari push sent')
-  })
-
-  // ios push
   if (iosPushToken) {
     // get insight content
     let randomInsight = await Insight.findById(insightIds[0])
@@ -77,6 +56,28 @@ async function sendPush(user, insightIds) {
   }
 }
 
+async function sendSafariPush(user) {
+  // get tokens
+  let devicePushTokens = await DevicePushToken.findAll({
+    attributes: ['value'],
+    where: { user_id: user.id, type: 'safari' }
+  })
+  let safariPushTokens = devicePushTokens.map((dpt) => dpt.value)
+
+  safariPushTokens.forEach((token) => {
+    let safariDevice = new apn.Device(token)
+    let safariNote = new apn.Notification()
+    safariNote.alert = {
+      title: 'Mentor',
+      body: 'You have new insights to explore'
+    }
+    safariNote.urlArgs = ['']
+
+    safariApnConnection.pushNotification(safariNote, safariDevice)
+    console.log('safari push sent')
+  })
+}
+
 
 // Worker (sends notification to a user)
 //
@@ -92,7 +93,7 @@ export default {
 
     // find last trace and define range
     let lastTrace = await findLastTrace(userId)
-    let range = { $lte: Date.now() }
+    let range = { $lte: new Date }
     if (lastTrace) { range['$gte'] = lastTrace.createdAt }
 
     // get insights without user reactions
@@ -108,9 +109,10 @@ export default {
       return done(null, true)
     }
 
-    // send notification (email, push)
+    // send notification
     sendEmail(user, insightIds)
-    sendPush(user, insightIds)
+    sendSafariPush(user)
+    sendIosPush(user, insightIds)
 
     // leave trace
     let trace = await Trace.create({ userId: user.id, status: 'delivered' })
