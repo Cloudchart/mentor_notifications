@@ -1,11 +1,7 @@
-import NR from 'node-resque'
 import schedule from 'node-schedule'
-import workers from '../workers'
+import { worker, scheduler, queue } from '../clients'
 
-import { redisClient } from '../clients'
 
-// Helpers
-//
 function stop() {
   queue.end(() => {
     scheduler.end(() => {
@@ -16,38 +12,31 @@ function stop() {
   })
 }
 
+function start() {
+  worker.connect(() => {
+    worker.workerCleanup()
+    worker.start()
+    console.log('>>> started worker')
+  })
 
-// Initializers
-//
-const worker = new NR.worker({ connection: { redis: redisClient }, queues: 'notifications' }, workers)
-worker.connect(() => {
-  worker.workerCleanup()
-  worker.start()
-})
+  scheduler.connect(() => {
+    scheduler.start()
+    console.log('>>> started scheduler')
+  })
 
-const scheduler = new NR.scheduler({ connection: { redis: redisClient } })
-scheduler.connect(() => {
-  scheduler.start()
-})
-
-const queue = new NR.queue({ connection: { redis: redisClient } }, workers)
+  queue.connect(() => {
+    schedule.scheduleJob('*/10 * * * *', () => {
+      console.log('>>> enqueued scheduled job')
+      if (scheduler.master) { queue.enqueue('notifications', 'listener') }
+    })
+  })
+}
 
 
-// Events
-//
 process.on('SIGINT', stop)
 process.on('SIGTERM', stop)
-queue.on('error', (error) => { console.log('Queue error:', error) })
 
 
-// Notifications queue simulation from WebApp
-//
-queue.connect(() => {
-  schedule.scheduleJob('*/10 * * * *', () => {
-    console.log('>>> enqueued scheduler')
-    if (scheduler.master) { queue.enqueue('notifications', 'listener') }
-  })
-})
-
-
-export default queue
+export default {
+  start: start
+}

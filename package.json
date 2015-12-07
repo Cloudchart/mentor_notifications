@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "start-dev": "nf start -w",
+    "test": "mocha --require .mocharc",
     "start": "nf start"
   },
   "dependencies": {
@@ -20,6 +21,7 @@
     "sequelize": "^3.13.0"
   },
   "devDependencies": {
+    "mocha": "^2.3.4",
     "sqlite3": "^3.1.1"
   }
 }

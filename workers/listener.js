@@ -1,6 +1,7 @@
+import queue from '../clients/queue'
+
 import { UsersThemesInsight } from '../models/web_app'
 import { lastTimestamp } from '../utils'
-import queue from '../initializers/node_resque'
 
 
 // Worker (decides when a user needs to be notified)

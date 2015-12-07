@@ -1,7 +1,7 @@
 import moment from 'moment'
+import queue from '../clients/queue'
 
 import { Trace } from '../models'
-import queue from '../initializers/node_resque'
 
 const defaultStartHourUTC = 7
 const defaultEndHourUTC = 17
@@ -73,5 +73,6 @@ export default {
         }
       }
     })
+
   }
 }
