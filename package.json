@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start-dev": "nf start -w",
-    "test": "mocha --require mocha-boot",
+    "test": "mocha --require mocha-boot --timeout 6000",
     "start": "nf start"
   },
   "dependencies": {

@@ -1,5 +1,10 @@
 import schedule from 'node-schedule'
-import { worker, scheduler, queue } from '../clients'
+import NR from 'node-resque'
+import workers from '../workers'
+import { redisClient, queue } from '../clients'
+
+const worker = new NR.worker({ connection: { redis: redisClient }, queues: 'notifications' }, workers)
+const scheduler = new NR.scheduler({ connection: { redis: redisClient } })
 
 
 function stop() {
@@ -37,6 +42,4 @@ process.on('SIGINT', stop)
 process.on('SIGTERM', stop)
 
 
-export default {
-  start: start
-}
+export default { start, worker, queue }

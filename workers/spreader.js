@@ -13,31 +13,39 @@ function findLastTrace(userId) {
 }
 
 function sendEmail(user, insightIds) {
-  if (!user.email) return
+  return new Promise((done, fail) => {
+    if (!user.email) { done() }
 
-  postmarkClient.sendEmail({
-    from: 'staff@insights.vc',
-    to: user.email,
-    subject: 'Notification',
-    TextBody: insightIds.join(', ')
-  }, (error, success) => {
-    if(error) {
-      console.error('unable to send via postmark:', error.message)
-    } else {
-      console.log('email sent')
-    }
+    postmarkClient.sendEmail({
+      from: 'staff@insights.vc',
+      to: user.email,
+      subject: 'Notification',
+      TextBody: insightIds.join(', ')
+    }, (error, success) => {
+      if (success) {
+        console.log('email sent')
+        done(success)
+      } else {
+        console.error('unable to send via postmark:', error.message)
+        fail(error)
+      }
+    })
+
   })
 }
 
-async function sendIosPush(user, insightIds) {
-  // get token
-  let device = await Device.findOne({
-    attributes: ['push_token'],
-    where: { user_id: user.id }
-  })
-  let iosPushToken = device.push_token
+function sendIosPush(user, insightIds) {
+  return new Promise(async (done, fail) => {
 
-  if (iosPushToken) {
+    // get token
+    let device = await Device.findOne({
+      attributes: ['push_token'],
+      where: { user_id: user.id }
+    })
+    let iosPushToken = device.push_token
+
+    if (!iosPushToken) { done() }
+
     // get insight content
     let randomInsight = await Insight.findById(insightIds[0])
     let insightContent = truncate(randomInsight.content, 100)
@@ -53,28 +61,36 @@ async function sendIosPush(user, insightIds) {
     // send notification
     iosApnConnection.pushNotification(iosNote, iosDevice)
     console.log('ios push sent')
-  }
+    done()
+
+  })
 }
 
-async function sendSafariPush(user) {
-  // get tokens
-  let devicePushTokens = await DevicePushToken.findAll({
-    attributes: ['value'],
-    where: { user_id: user.id, type: 'safari' }
-  })
-  let safariPushTokens = devicePushTokens.map((dpt) => dpt.value)
+function sendSafariPush(user) {
+  return new Promise(async (done, fail) => {
 
-  safariPushTokens.forEach((token) => {
-    let safariDevice = new apn.Device(token)
-    let safariNote = new apn.Notification()
-    safariNote.alert = {
-      title: 'Mentor',
-      body: 'You have new insights to explore'
-    }
-    safariNote.urlArgs = ['']
+    // get tokens
+    let devicePushTokens = await DevicePushToken.findAll({
+      attributes: ['value'],
+      where: { user_id: user.id, type: 'safari' }
+    })
+    let safariPushTokens = devicePushTokens.map((dpt) => dpt.value)
 
-    safariApnConnection.pushNotification(safariNote, safariDevice)
+    safariPushTokens.forEach((token) => {
+      let safariDevice = new apn.Device(token)
+      let safariNote = new apn.Notification()
+      safariNote.alert = {
+        title: 'Mentor',
+        body: 'You have new insights to explore'
+      }
+      safariNote.urlArgs = ['']
+
+      safariApnConnection.pushNotification(safariNote, safariDevice)
+    })
+
     console.log('safari push sent')
+    done()
+
   })
 }
 
@@ -110,13 +126,18 @@ export default {
     }
 
     // send notification
-    sendEmail(user, insightIds)
-    sendSafariPush(user)
-    sendIosPush(user, insightIds)
-
-    // leave trace
-    let trace = await Trace.create({ userId: user.id, status: 'delivered' })
-    console.log('trace created with status:', trace.status)
-    done(null, true)
+    Promise.all([
+      sendEmail(user, insightIds),
+      sendSafariPush(user),
+      sendIosPush(user, insightIds)
+    ]).then(async () => {
+      // leave trace
+      let trace = await Trace.create({ userId: user.id, status: 'delivered' })
+      console.log('trace created with status:', trace.status)
+      done(null, true)
+    }).catch((error) => {
+      console.error('something went wrong')
+      done(null, true)
+    })
   }
 }
