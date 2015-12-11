@@ -3,9 +3,10 @@ import queue from '../clients/queue'
 
 import { Trace } from '../models'
 
-const defaultStartHourUTC = 7
-const defaultEndHourUTC = 17
-const defaultNumberOfTimes = 6
+const defaultStartHour = '10:00'
+const defaultEndHour = '20:00'
+const defaultUTCOffset = '+03:00'
+const defaultTimesToSend = 6
 const oneDayInSeconds = 86400
 
 
@@ -32,7 +33,7 @@ function scheduleSpreader(timestamp, userId, done) {
 export default {
   perform: (userId, done) => {
     // return done if user doesn't want to receive notifications
-    if (defaultNumberOfTimes === 0) { return done(null, true) }
+    if (defaultTimesToSend === 0) { return done(null, true) }
 
     // schedule job unless it's present
     queue.scheduledAt('notifications', 'spreader', userId, async (err, timestamps) => {
@@ -40,8 +41,8 @@ export default {
         done(null, true)
       } else {
         let nowTime = moment().unix()
-        let startTime = moment.utc(defaultStartHourUTC, 'HH').unix()
-        let endTime = moment.utc(defaultEndHourUTC, 'HH').unix()
+        let startTime = moment(`${defaultStartHour} ${defaultUTCOffset}`, 'HH:mm Z').unix()
+        let endTime = moment(`${defaultEndHour} ${defaultUTCOffset}`, 'HH:mm Z').unix()
 
         // *|-------|
         if (nowTime < startTime) {
@@ -53,17 +54,17 @@ export default {
         } else {
           let nearestTime
 
-          if (defaultNumberOfTimes <= 2) {
+          if (defaultTimesToSend <= 2) {
             nearestTime = endTime
           } else {
             let traces = await findTodayTraces(userId)
             let deliveredNumberOfTimes = traces.length
 
-            if (deliveredNumberOfTimes >= defaultNumberOfTimes) {
+            if (deliveredNumberOfTimes >= defaultTimesToSend) {
               nearestTime = startTime + oneDayInSeconds
             } else {
               let nowDelta = nowTime - startTime
-              let step = (endTime - startTime) / (defaultNumberOfTimes - 1)
+              let step = (endTime - startTime) / (defaultTimesToSend - 1)
               nearestTime = startTime + step * Math.ceil(nowDelta / step)
             }
           }
