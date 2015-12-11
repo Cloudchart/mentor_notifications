@@ -3,7 +3,13 @@ import NR from 'node-resque'
 import workers from '../workers'
 import { redisClient, queue } from '../clients'
 
-const worker = new NR.worker({ connection: { redis: redisClient }, queues: 'notifications' }, workers)
+const worker = new NR.multiWorker({
+  connection: { redis: redisClient },
+  queues: 'notifications',
+  minTaskProcessors: 1,
+  maxTaskProcessors: 100
+}, workers)
+
 const scheduler = new NR.scheduler({ connection: { redis: redisClient } })
 
 
@@ -18,15 +24,12 @@ function stop() {
 }
 
 function start() {
-  worker.connect(() => {
-    worker.workerCleanup()
-    worker.start()
-    console.log('>>> started worker')
-  })
-
   scheduler.connect(() => {
     scheduler.start()
     console.log('>>> started scheduler')
+
+    worker.start()
+    console.log('>>> started worker')
   })
 
   queue.connect(() => {
