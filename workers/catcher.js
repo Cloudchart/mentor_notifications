@@ -19,9 +19,11 @@ function findTodayTraces(userId) {
   return Trace.findAll({ where: { userId: userId, createdAt: { $gte: startOfToday() } } })
 }
 
-function scheduleSpreader(queue, timestamp, userId) {
-  queue.enqueueAt(timestamp * 1000, 'notifications', 'spreader', userId)
-  console.log('>>> enqueued spreader')
+function scheduleSpreader(timestamp, userId, done) {
+  queue.enqueueAt(timestamp * 1000, 'notifications', 'spreader', userId, () => {
+    console.log('>>> enqueued spreader')
+    done(null, true)
+  })
 }
 
 
@@ -35,7 +37,7 @@ export default {
     // schedule job unless it's present
     queue.scheduledAt('notifications', 'spreader', userId, async (err, timestamps) => {
       if (timestamps.length > 0) {
-        return done(null, true)
+        done(null, true)
       } else {
         let nowTime = moment().unix()
         let startTime = moment.utc(defaultStartHourUTC, 'HH').unix()
@@ -43,12 +45,10 @@ export default {
 
         // *|-------|
         if (nowTime < startTime) {
-          scheduleSpreader(queue, startTime, userId)
-          return done(null, true)
+          scheduleSpreader(startTime, userId, done)
         // |-------|*
         } else if (nowTime > endTime) {
-          scheduleSpreader(queue, startTime + oneDayInSeconds, userId)
-          return done(null, true)
+          scheduleSpreader(startTime + oneDayInSeconds, userId, done)
         // |---*---|
         } else {
           let nearestTime
@@ -68,8 +68,7 @@ export default {
             }
           }
 
-         scheduleSpreader(queue, nearestTime, userId)
-         return done(null, true)
+          scheduleSpreader(nearestTime, userId, done)
         }
       }
     })
