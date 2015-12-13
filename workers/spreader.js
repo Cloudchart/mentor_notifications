@@ -14,7 +14,7 @@ function findLastTrace(userId) {
 
 function sendEmail(user, insightIds) {
   return new Promise((done, fail) => {
-    if (!user.email) { done() }
+    if (!user.email) { return done() }
 
     postmarkClient.sendEmail({
       from: 'staff@insights.vc',
@@ -44,7 +44,7 @@ function sendIosPush(user, insightIds) {
     })
     let iosPushToken = device.push_token
 
-    if (!iosPushToken) { done() }
+    if (!iosPushToken) { return done() }
 
     // get insight content
     let randomInsight = await Insight.findById(insightIds[0])
@@ -86,9 +86,9 @@ function sendSafariPush(user) {
       safariNote.urlArgs = ['']
 
       safariApnConnection.pushNotification(safariNote, safariDevice)
+      console.log('safari push sent')
     })
 
-    console.log('safari push sent')
     done()
 
   })
