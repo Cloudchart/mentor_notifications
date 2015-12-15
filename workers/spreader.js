@@ -56,7 +56,7 @@ function sendIosPush(user, insightIds) {
     iosNote.alert = 'New advice for you: ' + insightContent
     iosNote.sound = 'default'
     iosNote.badge = insightIds.length
-    iosNote.payload = { screen: 'AdviceForYou' }
+    iosNote.payload = { 'mentor-screen': 'AdviceForYou' }
 
     // send notification
     iosApnConnection.pushNotification(iosNote, iosDevice)
