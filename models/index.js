@@ -1,3 +1,5 @@
+require('dotenv').load()
+
 import fs from 'fs'
 import path from 'path'
 import Sequelize from 'sequelize'

@@ -1,3 +1,5 @@
+require('dotenv').load()
+
 import schedule from 'node-schedule'
 import NR from 'node-resque'
 import workers from '../workers'
