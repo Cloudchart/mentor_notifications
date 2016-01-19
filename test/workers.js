@@ -19,7 +19,7 @@ describe('Workers', () => {
         worker.end(done)
       })
 
-      queue.enqueue('notifications', 'catcher', '7f9d8b54-2f30-437d-9f8c-6c3ee503f47c')
+      queue.enqueue('notifications', 'catcher', 'd51bc108-6e93-4bc3-bb63-0871f7d26bea')
       worker.start()
     })
   })
@@ -31,7 +31,7 @@ describe('Workers', () => {
         worker.end(done)
       })
 
-      queue.enqueue('notifications', 'spreader', '7f9d8b54-2f30-437d-9f8c-6c3ee503f47c')
+      queue.enqueue('notifications', 'spreader', 'd51bc108-6e93-4bc3-bb63-0871f7d26bea')
       worker.start()
     })
   })

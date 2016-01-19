@@ -16,7 +16,7 @@ describe('Performance', () => {
       let range = Array.from(Array(10).keys())
 
       range.forEach((item) => {
-        queue.enqueueAt(Date.now(), 'notifications', 'spreader', '7f9d8b54-2f30-437d-9f8c-6c3ee503f47c', () => {
+        queue.enqueueAt(Date.now(), 'notifications', 'spreader', 'd51bc108-6e93-4bc3-bb63-0871f7d26bea', () => {
           console.log('>>> enqueued spreader')
         })
       })
