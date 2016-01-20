@@ -8,6 +8,7 @@ export default (sequelize, DataTypes) => {
       type: DataTypes.TEXT
     }
   }, {
+    tableName: 'insights',
     underscored: true,
     classMethods: {
       associate: (models) => {

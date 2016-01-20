@@ -15,6 +15,7 @@ export default (sequelize, DataTypes) => {
       field: 'is_active'
     }
   }, {
+    tableName: 'users',
     underscored: true,
     classMethods: {
       associate: (models) => {

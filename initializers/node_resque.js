@@ -9,7 +9,7 @@ const worker = new NR.multiWorker({
   connection: { redis: redisClient },
   queues: 'notifications',
   minTaskProcessors: 1,
-  maxTaskProcessors: 100
+  maxTaskProcessors: 20,
 }, workers)
 
 const scheduler = new NR.scheduler({ connection: { redis: redisClient } })
@@ -18,7 +18,8 @@ const scheduler = new NR.scheduler({ connection: { redis: redisClient } })
 function stop() {
   scheduler.end(() => {
     worker.end(() => {
-      process.exit(0)
+      console.log('>>> stopped all workers')
+      return process.exit(0)
     })
   })
 }
@@ -34,8 +35,10 @@ function start() {
 
   queue.connect(() => {
     schedule.scheduleJob('*/10 * * * *', () => {
-      console.log('>>> enqueued scheduled job')
-      if (scheduler.master) { queue.enqueue('notifications', 'listener') }
+      if (scheduler.master) {
+        queue.enqueue('notifications', 'listener')
+        console.log('>>> enqueued scheduled job')
+      }
     })
   })
 }

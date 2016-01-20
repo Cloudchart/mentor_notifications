@@ -14,8 +14,8 @@ export default (sequelize, DataTypes) => {
       type: DataTypes.INTEGER
     }
   }, {
-    underscored: true,
     tableName: 'users_themes_insights',
+    underscored: true,
     classMethods: {
       associate: (models) => {
         // associations can be defined here
